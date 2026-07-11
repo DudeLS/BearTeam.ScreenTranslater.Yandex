@@ -1,0 +1,1 @@
+# BearTeam.ScreenTranslater.Yandex
