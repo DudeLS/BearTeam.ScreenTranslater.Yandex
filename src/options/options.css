@@ -4,17 +4,125 @@ body {
     margin: 0;
     padding: 20px;
 }
-input {
+
+.container {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+h1 {
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+/* === Обёртка для инпута и кнопки === */
+.input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+input[type="text"] {
+    width: 100%;
+    padding: 8px;
+    padding-right: 40px; /* место для кнопки */
     border: 1px solid #ccc;
     border-radius: 4px;
+    box-sizing: border-box;
 }
+
+/* Ошибка */
+input.error-input {
+    border-color: #d32f2f;
+    background-color: #ffebee;
+}
+
+.error-message {
+    color: #d32f2f;
+    font-size: 13px;
+    margin-top: 4px;
+}
+
+/* === Скрытие текста через точки === */
+.hidden-text {
+    -webkit-text-security: disc;
+    text-security: disc;
+}
+
+/* === Кнопка-глаз === */
+.toggle-visibility {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 6px;
+    font-size: 18px;
+    line-height: 1;
+    color: #666;
+    transition: color 0.2s;
+}
+
+.toggle-visibility:hover {
+    color: #333;
+}
+
+.toggle-visibility:focus {
+    outline: none;
+}
+
+/* === Основные кнопки === */
 button {
     background: #4caf50;
     color: white;
     border: none;
     border-radius: 4px;
+    padding: 8px 16px;
     cursor: pointer;
+    font-size: 14px;
 }
+
 button:hover {
     background: #45a049;
+}
+
+.button-group {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-top: 8px;
+}
+
+button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+button:disabled:hover {
+    background: #ccc;
+}
+
+.clear-button {
+    background: #f44336;
+}
+
+.clear-button:hover {
+    background: #d32f2f;
+}
+
+.status-message {
+    margin-top: 12px;
+    color: green;
 }

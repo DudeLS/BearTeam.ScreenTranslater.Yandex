@@ -10,10 +10,10 @@ export default defineConfig({
         rollupOptions: {
             input: {
                 popup: resolve(__dirname, "src/popup/popup.tsx"),
-                background: resolve(__dirname, "src/background/background.ts"),
+                options: resolve(__dirname, "src/options/options.tsx"),
                 content: resolve(__dirname, "src/content/content.ts"),
                 offscreen: resolve(__dirname, "src/offscreen/offscreen.ts"),
-                options: resolve(__dirname, "src/options/options.tsx"),
+                background: resolve(__dirname, "src/background/background.ts"),
             },
             output: {
                 entryFileNames: "[name].js",
