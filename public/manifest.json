@@ -2,6 +2,10 @@
     "manifest_version": 3,
     "name": "Screen Translator (Yandex)",
     "version": "1.0.0",
+    "options_ui": {
+        "page": "options.html",
+        "open_in_tab": true
+    },
     "permissions": ["activeTab", "storage", "scripting", "offscreen"],
     "host_permissions": ["<all_urls>", "https://vision.yandex.net/*", "https://translate.yandex.net/*"],
     "background": {

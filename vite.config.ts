@@ -13,6 +13,7 @@ export default defineConfig({
                 background: resolve(__dirname, "src/background/background.ts"),
                 content: resolve(__dirname, "src/content/content.ts"),
                 offscreen: resolve(__dirname, "src/offscreen/offscreen.ts"),
+                options: resolve(__dirname, "src/options/options.tsx"),
             },
             output: {
                 entryFileNames: "[name].js",

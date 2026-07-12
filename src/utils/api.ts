@@ -1,4 +1,4 @@
-export async function recognizeText(imageBase64: string, apiKey: string): Promise<string> {
+export async function recognizeText(imageBase64: string, apiKey: string, folderId: string): Promise<string> {
     // Убираем префикс data:image/png;base64,
     const base64Data = imageBase64.split(",")[1];
 
@@ -14,7 +14,7 @@ export async function recognizeText(imageBase64: string, apiKey: string): Promis
         headers: {
             Authorization: `Api-Key ${apiKey}`,
             "Content-Type": "application/json",
-            "x-folder-id": YANDEX_FOLDER_ID,
+            "x-folder-id": folderId.trim(),
             "x-data-logging-enabled": "true",
         },
         body: JSON.stringify(body),
@@ -46,14 +46,19 @@ function extractTextFromOCR(data: any): string {
     return lines.join("\n");
 }
 
-export async function translateText(text: string, targetLang: string, apiKey: string): Promise<string> {
+export async function translateText(
+    text: string,
+    targetLang: string,
+    apiKey: string,
+    folderId: string,
+): Promise<string> {
     console.log("text", text);
     const body = {
         sourceLanguageCode: "en",
         targetLanguageCode: targetLang,
         format: "PLAIN_TEXT",
         texts: [text],
-        folderId: YANDEX_FOLDER_ID,
+        folderId: folderId.trim(),
     };
     const response = await fetch("https://translate.api.cloud.yandex.net/translate/v2/translate", {
         method: "POST",

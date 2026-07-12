@@ -9,6 +9,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 async function captureAndProcess(x: number, y: number, width: number, height: number) {
     try {
+        // Получаем настройки из хранилища
+        const { yandexApiKey, yandexFolderId } = await new Promise<{ yandexApiKey?: string; yandexFolderId?: string }>(
+            (resolve) => {
+                chrome.storage.local.get(["yandexApiKey", "yandexFolderId"], resolve);
+            },
+        );
+        if (!yandexApiKey || !yandexFolderId) {
+            throw new Error("Не заданы API-ключ или Folder ID. Откройте страницу настроек расширения.");
+        }
+
         const dataUrl = await new Promise<string>((resolve) => {
             chrome.tabs.captureVisibleTab({ format: "png" }, (url) => resolve(url));
         });
@@ -30,13 +40,13 @@ async function captureAndProcess(x: number, y: number, width: number, height: nu
             }
         }
 
-        const recognizedText = await recognizeText(croppedDataUrl, YANDEX_API_KEY);
+        const recognizedText = await recognizeText(croppedDataUrl, yandexApiKey, yandexFolderId);
 
         const { targetLang } = await new Promise<{ targetLang?: string }>((resolve) => {
             chrome.storage.local.get(["targetLang"], resolve);
         });
 
-        const translated = await translateText(recognizedText, targetLang || "en", YANDEX_API_KEY);
+        const translated = await translateText(recognizedText, targetLang || "en", yandexApiKey, yandexFolderId);
 
         chrome.storage.local.set({ result: translated, loading: false });
     } catch (error) {
