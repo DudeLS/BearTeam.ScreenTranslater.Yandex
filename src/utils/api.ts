@@ -21,29 +21,12 @@ export async function recognizeText(imageBase64: string, apiKey: string, folderI
     });
 
     if (!response.ok) {
-        throw new Error(`OCR ошибка: ${response.status} ${await response.text()}`);
+        throw new Error(`Ошибка распознования: ${response.status} ${await response.text()}`);
     }
 
     const data = await response.json();
 
-    console.log(data);
-
     return data.result?.textAnnotation?.fullText || "";
-
-    // return extractTextFromOCR(data);
-}
-
-function extractTextFromOCR(data: any): string {
-    const pages = data.results?.[0]?.text_detection?.pages || [];
-    const lines: string[] = [];
-    for (const page of pages) {
-        for (const block of page.blocks || []) {
-            for (const line of block.lines || []) {
-                lines.push(line.text);
-            }
-        }
-    }
-    return lines.join("\n");
 }
 
 export async function translateText(
@@ -52,7 +35,6 @@ export async function translateText(
     apiKey: string,
     folderId: string,
 ): Promise<string> {
-    console.log("text", text);
     const body = {
         sourceLanguageCode: "en",
         targetLanguageCode: targetLang,
@@ -69,10 +51,8 @@ export async function translateText(
         body: JSON.stringify(body),
     });
     if (!response.ok) {
-        throw new Error(`Translate ошибка: ${response.status}`);
+        throw new Error(`Ошибка перевода: ${response.status} ${await response.text()}`);
     }
     const data = await response.json();
-    console.log(data);
     return data?.translations[0]?.text || "";
-    return data.text?.[0] || "";
 }
