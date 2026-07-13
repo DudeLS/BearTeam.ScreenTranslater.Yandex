@@ -1,51 +1,80 @@
+import { HttpError } from "../errors/http.errors";
+import { HTTP_STATUS } from "../enums/http.enums";
+import { YandexService } from "./yandex.service";
+import { RecognizeTextParams, RecognizeTextResult } from "../types/recognize.types";
+
+export const DEFAULT_RECOGNIZE_TEXT_URL = "https://ai.api.cloud.yandex.net/ocr/v1/recognizeText";
+
 /**
  * Сервис распознования данных
  */
-export class RecognizeService {
-    private apiKey: string;
-    private folderId: string;
+export class RecognizeService extends YandexService {
+    private recognizeTextUrl: string;
     /**
-     * Сервис распознования данных
-     * @param apiKey API-ключ для работы с Vision OCR
-     * @param folderId Идентификатор каталога сервисного аккаунта
+     * Сервис перевода данных
+     * @param {Object} cfg - Конфигурация сервиса
+     * @param {string} cfg.apiKey - API-ключ для работы с Яндекс.Облаком
+     * @param {string} cfg.folderId - Идентификатор каталога сервисного аккаунта
+     * @param {string} [cfg.recognizeTextUrl] - URL эндпоинта распознования текста (опционально)
      */
-    constructor(apiKey: string, folderId: string) {
-        this.apiKey = apiKey.trim();
-        this.folderId = folderId.trim();
+    constructor(cfg: { apiKey: string; folderId: string; recognizeTextUrl?: string }) {
+        super(cfg);
+        this.recognizeTextUrl = cfg.recognizeTextUrl?.trim() ?? DEFAULT_RECOGNIZE_TEXT_URL;
     }
     /**
-     * Распознать текст
-     * @param image Изображение (Base64)
-     * @param format Формат изображения
-     * @param langs Список языков для распознавания
-     * @returns Распознанный текст
+     * Распознать текст с помощью Yandex OCR API
+     * @param {RecognizeTextParams} params параметры запроса на распознование текста
+     * @returns {Promise<RecognizeTextResult>} объект с результатом или ошибкой
      */
-    public async recognizeText(image: string, format: string, langs: string[]): Promise<string> {
-        const content = image.startsWith("data:") ? image.split(",")[1] : image;
+    public async recognizeText(params: RecognizeTextParams): Promise<RecognizeTextResult> {
+        let status = HTTP_STATUS.BEFORE_REQUEST;
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000);
+        try {
+            this.validateBaseParams();
+            if (params.image?.length == 0) {
+                throw new HttpError("Отсутствует изображение", HTTP_STATUS.BAD_REQUEST);
+            }
+            if (params.format?.length == 0) {
+                throw new HttpError("Отсутствует формат изображения", HTTP_STATUS.BAD_REQUEST);
+            }
+            if (params.langs?.length == 0) {
+                throw new HttpError("Отсутствует список кодов языков для распознавания", HTTP_STATUS.BAD_REQUEST);
+            }
 
-        const response = await fetch("https://ai.api.cloud.yandex.net/ocr/v1/recognizeText", {
-            method: "POST",
-            headers: {
-                Authorization: `Api-Key ${this.apiKey}`,
-                "Content-Type": "application/json",
-                "x-folder-id": this.folderId,
-                "x-data-logging-enabled": "true",
-            },
-            body: JSON.stringify({
-                mimeType: format,
-                languageCodes: langs,
-                model: "page",
-                content: content,
-            }),
-        });
+            const content = params.image.startsWith("data:") ? params.image.split(",")[1] : params.image;
 
-        if (!response.ok) {
-            const message = await response.text();
-            throw new Error(`Ошибка распознавания (${response.status}): ${message}`);
+            const response = await fetch(this.recognizeTextUrl, {
+                method: "POST",
+                headers: {
+                    Authorization: `Api-Key ${this.apiKey}`,
+                    "Content-Type": "application/json",
+                    "x-folder-id": this.folderId,
+                    "x-data-logging-enabled": "true",
+                },
+                body: JSON.stringify({
+                    mimeType: params.format,
+                    languageCodes: params.langs,
+                    model: "page",
+                    content: content,
+                }),
+            });
+
+            clearTimeout(timeout);
+            status = response.status;
+
+            if (!response.ok) {
+                return this.handleUnSuccessResponse(response);
+            }
+
+            const data: RecognizeTextData = await response.json();
+            const fullText = data.result?.textAnnotation?.fullText || "";
+
+            return { success: true, status: status, recognition: fullText };
+        } catch (error: unknown) {
+            clearTimeout(timeout);
+            return this.handleExceptionResponse(error, status);
         }
-
-        const data: RecognizeTextData = await response.json();
-        return data.result?.textAnnotation?.fullText || "";
     }
 }
 

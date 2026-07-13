@@ -1,5 +1,6 @@
-import { ERROR_NAME } from "../constants/error.constants";
+import { HttpError } from "../errors/http.errors";
 import { HTTP_STATUS } from "../enums/http.enums";
+import { YandexService } from "./yandex.service";
 import { TranslateTextParams, TranslateTextResult } from "../types/translate.types";
 
 export const DEFAULT_TRANSLATE_TEXT_URL = "https://translate.api.cloud.yandex.net/translate/v2/translate";
@@ -7,9 +8,7 @@ export const DEFAULT_TRANSLATE_TEXT_URL = "https://translate.api.cloud.yandex.ne
 /**
  * Сервис перевода данных
  */
-export class TranslateService {
-    private apiKey: string;
-    private folderId: string;
+export class TranslateService extends YandexService {
     private translateTextUrl: string;
     /**
      * Сервис перевода данных
@@ -19,8 +18,7 @@ export class TranslateService {
      * @param {string} [cfg.translateTextUrl] - URL эндпоинта перевода текста (опционально)
      */
     constructor(cfg: { apiKey: string; folderId: string; translateTextUrl?: string }) {
-        this.apiKey = cfg.apiKey.trim();
-        this.folderId = cfg.folderId.trim();
+        super(cfg);
         this.translateTextUrl = cfg.translateTextUrl?.trim() ?? DEFAULT_TRANSLATE_TEXT_URL;
     }
     /**
@@ -33,33 +31,17 @@ export class TranslateService {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 10000);
         try {
-            if (this.apiKey?.length == 0) {
-                return {
-                    success: false,
-                    status: HTTP_STATUS.BAD_REQUEST,
-                    message: "Отсутствует API-ключ для работы с Яндекс.Облаком",
-                };
-            }
-            if (this.folderId?.length == 0) {
-                return {
-                    success: false,
-                    status: HTTP_STATUS.BAD_REQUEST,
-                    message: "Отсутствует идентификатор каталога сервисного аккаунта",
-                };
-            }
-            if (params.texts?.length == 0) {
-                return {
-                    success: false,
-                    status: HTTP_STATUS.BAD_REQUEST,
-                    message: "Отсутствует массив строк для перевода",
-                };
+            this.validateBaseParams();
+            if (params.targetLang?.length == 0) {
+                throw new HttpError("Отсутствует код языка перевода", HTTP_STATUS.BAD_REQUEST);
             }
             if (params.sourceLang?.length == 0) {
-                return { success: false, status: HTTP_STATUS.BAD_REQUEST, message: "Отсутствует код языка оригинала" };
+                throw new HttpError("Отсутствует код языка оригинала", HTTP_STATUS.BAD_REQUEST);
             }
-            if (params.targetLang?.length == 0) {
-                return { success: false, status: HTTP_STATUS.BAD_REQUEST, message: "Отсутствует код языка перевода" };
+            if (params.texts?.length == 0) {
+                throw new HttpError("Отсутствует массив строк для перевода", HTTP_STATUS.BAD_REQUEST);
             }
+
             const response = await fetch(this.translateTextUrl, {
                 method: "POST",
                 headers: {
@@ -80,26 +62,16 @@ export class TranslateService {
             status = response.status;
 
             if (!response.ok) {
-                const text = await response.text();
-                try {
-                    const error: TranslateTextError = JSON.parse(text);
-                    return { success: false, status: status, message: error.message };
-                } catch {
-                    return { success: false, status: status, message: text };
-                }
+                return this.handleUnSuccessResponse(response);
             }
 
             const data: TranslateTextData = await response.json();
             const translations = data.translations?.map((item) => item.text ?? "") ?? [];
 
             return { success: true, status: status, translations: translations };
-        } catch (error: any) {
+        } catch (error: unknown) {
             clearTimeout(timeout);
-            if (error.name === ERROR_NAME.ABORT) {
-                return { success: false, status: HTTP_STATUS.REQUEST_TIMEOUT, message: "Превышено время ожидания" };
-            } else {
-                return { success: false, status: status, message: String(error) };
-            }
+            return this.handleExceptionResponse(error, status);
         }
     }
 }
@@ -108,9 +80,4 @@ type TranslateTextData = {
     translations?: {
         text?: string;
     }[];
-};
-
-type TranslateTextError = {
-    code: number;
-    message: string;
 };

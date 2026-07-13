@@ -1,3 +1,5 @@
+import { ActionResult } from "./yandex.types";
+
 /**
  * Формат текста
  */
@@ -28,21 +30,9 @@ export type TranslateTextParams = {
 /**
  * Объект с результатом или ошибкой перевода
  */
-export type TranslateTextResult = {
-    /**
-     * Успешный ли перевод
-     */
-    success: boolean;
-    /**
-     * Статус запроса
-     */
-    status: number;
-    /**
-     * Описание ошибки
-     */
-    message?: string;
+export interface TranslateTextResult extends ActionResult {
     /**
      * Массив переводов текста
      */
     translations?: string[];
-};
+}
