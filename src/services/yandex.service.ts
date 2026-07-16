@@ -30,6 +30,11 @@ export class YandexService {
             throw new HttpError("Отсутствует идентификатор каталога сервисного аккаунта", HTTP_STATUS.BAD_REQUEST);
         }
     }
+    /**
+     * Обработать неуспешный ответ
+     * @param response HTTP ответ
+     * @returns {Promise<TResult>} объект с ошибкой
+     */
     protected async handleUnSuccessResponse<TResult extends ActionResult>(response: Response): Promise<TResult> {
         const text = await response.text();
         try {
@@ -39,6 +44,12 @@ export class YandexService {
             return { success: false, status: response.status, message: text } as TResult;
         }
     }
+    /**
+     * Обработать ошибку
+     * @param error Ошибка
+     * @param status Статус
+     * @returns Объект с ошибкой
+     */
     protected handleExceptionResponse<TResult extends ActionResult>(error: unknown, status: number): TResult {
         if (error instanceof HttpError) {
             return { success: false, status: error.status, message: error.message } as TResult;

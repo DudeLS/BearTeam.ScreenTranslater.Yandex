@@ -55,7 +55,7 @@ export class RecognizeService extends YandexService {
                 body: JSON.stringify({
                     mimeType: params.format,
                     languageCodes: params.langs,
-                    model: "page",
+                    model: params.model || "page",
                     content: content,
                 }),
             });

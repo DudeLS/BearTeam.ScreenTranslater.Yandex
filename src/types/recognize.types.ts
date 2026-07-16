@@ -6,6 +6,11 @@ import { ActionResult } from "./yandex.types";
 export type ImageFormat = "PNG" | "JPEG" | "PDF";
 
 /**
+ * Модель для распознавания
+ */
+export type RecognizeModel = "page" | "page-column-sort" | "handwritten" | "table" | "markdown" | "math-markdown";
+
+/**
  * Параметры запроса на распознование текста
  */
 export type RecognizeTextParams = {
@@ -21,6 +26,10 @@ export type RecognizeTextParams = {
      * Список кодов языков для распознавания
      */
     langs: string[];
+    /**
+     * Модель для распознавания
+     */
+    model?: RecognizeModel;
 };
 
 /**

@@ -1,29 +1,52 @@
 import "./options.css";
 import React, { useState, useEffect } from "react";
+import { DEFAULT_TRANSLATE_TEXT_URL, TranslateService } from "../services/translate.service";
+import { DEFAULT_RECOGNIZE_TEXT_URL, RecognizeService } from "../services/recognize.service";
 
 const KEYS = {
     YANDEX_API_KEY: "yandexApiKey",
     YANDEX_FOLDER_ID: "yandexFolderId",
+    TRANSLATE_ENDPOINT: "translateTextUrl",
+    RECOGNIZE_ENDPOINT: "recognizeTextUrl",
 };
+
+const TEST_IMAGE_BASE64 =
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 
 const OptionsApp: React.FC = () => {
     const [apiKey, setApiKey] = useState("");
     const [folderId, setFolderId] = useState("");
     const [status, setStatus] = useState("");
+    const [translateEndpoint, setTranslateEndpoint] = useState(DEFAULT_TRANSLATE_TEXT_URL);
+    const [recognizeEndpoint, setRecognizeEndpoint] = useState(DEFAULT_RECOGNIZE_TEXT_URL);
+    const [isChecking, setIsChecking] = useState(false);
+
     const [isApiKeyValid, setIsApiKeyValid] = useState(true);
-    const [apiKeyErrorMsg, setApiKeyErrorMsg] = useState("");
     const [isFolderIdValid, setIsFolderIdValid] = useState(true);
+    const [isTranslateEndpointValid, setIsTranslateEndpointValid] = useState(true);
+    const [isRecognizeEndpointValid, setIsRecognizeEndpointValid] = useState(true);
+    const [apiKeyErrorMsg, setApiKeyErrorMsg] = useState("");
     const [folderIdErrorMsg, setFolderIdErrorMsg] = useState("");
+    const [translateEndpointErrorMsg, setTranslateEndpointErrorMsg] = useState("");
+    const [recognizeEndpointErrorMsg, setRecognizeEndpointErrorMsg] = useState("");
+
     const [showApiKey, setShowApiKey] = useState(false);
     const [showFolderId, setShowFolderId] = useState(false);
 
     useEffect(() => {
-        chrome.storage.local.get([KEYS.YANDEX_API_KEY, KEYS.YANDEX_FOLDER_ID], (data: any) => {
-            const apiKey = data.yandexApiKey || "";
-            const folderId = data.yandexFolderId || "";
-            setApiKey(apiKey);
-            setFolderId(folderId);
-        });
+        chrome.storage.local.get(
+            [KEYS.YANDEX_API_KEY, KEYS.YANDEX_FOLDER_ID, KEYS.TRANSLATE_ENDPOINT, KEYS.RECOGNIZE_ENDPOINT],
+            (data: any) => {
+                const apiKey = data.yandexApiKey || "";
+                const folderId = data.yandexFolderId || "";
+                const translateEndpoint = data.translateTextUrl || DEFAULT_TRANSLATE_TEXT_URL;
+                const recognizeEndpoint = data.recognizeTextUrl || DEFAULT_RECOGNIZE_TEXT_URL;
+                setApiKey(apiKey);
+                setFolderId(folderId);
+                setTranslateEndpoint(translateEndpoint);
+                setRecognizeEndpoint(recognizeEndpoint);
+            },
+        );
     }, []);
 
     const validateApiKey = (value: string): boolean => {
@@ -64,6 +87,50 @@ const OptionsApp: React.FC = () => {
         return isValid;
     };
 
+    const validateTranslateEndpoint = (value: string): boolean => {
+        const trimmed = value.trim();
+        let isValid = false;
+        let errorMsg = "";
+
+        if (!trimmed) {
+            errorMsg = "Значение обязателено для заполнения";
+        } else {
+            try {
+                new URL(trimmed);
+                isValid = true;
+            } catch {
+                errorMsg = "Некорректный URL";
+            }
+        }
+
+        setIsTranslateEndpointValid(isValid);
+        setTranslateEndpointErrorMsg(errorMsg);
+
+        return isValid;
+    };
+
+    const validateRecognizeEndpoint = (value: string): boolean => {
+        const trimmed = value.trim();
+        let isValid = false;
+        let errorMsg = "";
+
+        if (!trimmed) {
+            errorMsg = "Значение обязателено для заполнения";
+        } else {
+            try {
+                new URL(trimmed);
+                isValid = true;
+            } catch {
+                errorMsg = "Некорректный URL";
+            }
+        }
+
+        setIsRecognizeEndpointValid(isValid);
+        setRecognizeEndpointErrorMsg(errorMsg);
+
+        return isValid;
+    };
+
     const onApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         setApiKey(value);
@@ -76,10 +143,24 @@ const OptionsApp: React.FC = () => {
         validateFolderId(value);
     };
 
+    const onTranslateEndpointChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setTranslateEndpoint(value);
+        validateTranslateEndpoint(value);
+    };
+
+    const onRecognizeEndpointChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setRecognizeEndpoint(value);
+        validateRecognizeEndpoint(value);
+    };
+
     const validateOptions = (): boolean => {
         const isValidApiKey = validateApiKey(apiKey);
         const isValidFolderId = validateFolderId(folderId);
-        return isValidApiKey && isValidFolderId;
+        const isValidTranslateEndpoint = validateTranslateEndpoint(translateEndpoint);
+        const isValidRecognizeEndpoint = validateRecognizeEndpoint(recognizeEndpoint);
+        return isValidApiKey && isValidFolderId && isValidTranslateEndpoint && isValidRecognizeEndpoint;
     };
 
     const saveOptions = () => {
@@ -88,6 +169,8 @@ const OptionsApp: React.FC = () => {
                 {
                     yandexApiKey: apiKey.trim(),
                     yandexFolderId: folderId.trim(),
+                    translateTextUrl: translateEndpoint.trim(),
+                    recognizeTextUrl: recognizeEndpoint.trim(),
                 },
                 () => {
                     setStatus("Настройки сохранены");
@@ -101,11 +184,17 @@ const OptionsApp: React.FC = () => {
         if (window.confirm("Вы уверены, что хотите очистить все настройки?")) {
             chrome.storage.local.remove([KEYS.YANDEX_API_KEY, KEYS.YANDEX_FOLDER_ID], () => {
                 setApiKey("");
-                setFolderId("");
                 setIsApiKeyValid(true);
                 setApiKeyErrorMsg("");
+                setFolderId("");
                 setIsFolderIdValid(true);
                 setFolderIdErrorMsg("");
+                setTranslateEndpoint(DEFAULT_TRANSLATE_TEXT_URL);
+                setIsTranslateEndpointValid(true);
+                setTranslateEndpointErrorMsg("");
+                setRecognizeEndpoint(DEFAULT_RECOGNIZE_TEXT_URL);
+                setIsRecognizeEndpointValid(true);
+                setRecognizeEndpointErrorMsg("");
                 setStatus("Настройки очищены");
                 setTimeout(() => setStatus(""), 3000);
             });
@@ -114,6 +203,76 @@ const OptionsApp: React.FC = () => {
 
     const toggleShowApiKey = () => setShowApiKey(!showApiKey);
     const toggleShowFolderId = () => setShowFolderId(!showFolderId);
+
+    const checkTranslateEndpoint = async () => {
+        const isValidApiKey = validateApiKey(apiKey);
+        const isValidFolderId = validateFolderId(folderId);
+        const isValidTranslateEndpoint = validateTranslateEndpoint(translateEndpoint);
+        if (!isValidApiKey || !isValidFolderId || !isValidTranslateEndpoint) {
+            return;
+        }
+
+        setIsChecking(true);
+        setStatus("⏳ Проверка...");
+
+        try {
+            const service = new TranslateService({
+                apiKey: apiKey.trim(),
+                folderId: folderId.trim(),
+                translateTextUrl: translateEndpoint.trim(),
+            });
+            const result = await service.translateText({
+                texts: ["Hello"],
+                sourceLang: "en",
+                targetLang: "ru",
+            });
+            if (result.success) {
+                setStatus(`✅ Translate доступен (перевод: "${result.translations?.[0] || ""}")`);
+            } else {
+                setStatus(`❌ Ошибка: ${result.message || "неизвестная ошибка"}`);
+            }
+        } catch (error: any) {
+            setStatus(`❌ Ошибка: ${error.message || String(error)}`);
+        } finally {
+            setIsChecking(false);
+            setTimeout(() => setStatus(""), 3000);
+        }
+    };
+
+    const checkRecognizeEndpoint = async () => {
+        const isValidApiKey = validateApiKey(apiKey);
+        const isValidFolderId = validateFolderId(folderId);
+        const isValidRecognizeEndpoint = validateRecognizeEndpoint(recognizeEndpoint);
+        if (!isValidApiKey || !isValidFolderId || !isValidRecognizeEndpoint) {
+            return;
+        }
+
+        setIsChecking(true);
+        setStatus("⏳ Проверка...");
+
+        try {
+            const service = new RecognizeService({
+                apiKey: apiKey.trim(),
+                folderId: folderId.trim(),
+                recognizeTextUrl: recognizeEndpoint.trim(),
+            });
+            const result = await service.recognizeText({
+                image: TEST_IMAGE_BASE64,
+                format: "PNG",
+                langs: ["ru", "en"],
+            });
+            if (result.success) {
+                setStatus(`✅ Recognize доступен (распознано: "${result.recognition || ""}")`);
+            } else {
+                setStatus(`❌ Ошибка: ${result.message || "неизвестная ошибка"}`);
+            }
+        } catch (error: any) {
+            setStatus(`❌ Ошибка: ${error.message || String(error)}`);
+        } finally {
+            setIsChecking(false);
+            setTimeout(() => setStatus(""), 3000);
+        }
+    };
 
     return (
         <div className="container">
@@ -166,10 +325,56 @@ const OptionsApp: React.FC = () => {
                 </div>
                 {!isFolderIdValid && <div className="error-message">{folderIdErrorMsg}</div>}
             </div>
+            <div className="form-group">
+                <label htmlFor="translateEndpoint">Translate Text URL</label>
+                <div className="input-wrapper">
+                    <input
+                        id="translateEndpoint"
+                        type="text"
+                        value={translateEndpoint}
+                        onChange={onTranslateEndpointChange}
+                        className={isTranslateEndpointValid ? "" : "error-input"}
+                        placeholder="https://..."
+                        autoComplete="off"
+                    />
+                    <button
+                        type="button"
+                        className="check-button"
+                        onClick={checkTranslateEndpoint}
+                        disabled={isChecking || !isTranslateEndpointValid}
+                    >
+                        {isChecking ? "⏳" : "🔍"}
+                    </button>
+                </div>
+                {!isTranslateEndpointValid && <div className="error-message">{translateEndpointErrorMsg}</div>}
+            </div>
+            <div className="form-group">
+                <label htmlFor="recognizeEndpoint">Recognize Text URL</label>
+                <div className="input-wrapper">
+                    <input
+                        id="recognizeEndpoint"
+                        type="text"
+                        value={recognizeEndpoint}
+                        onChange={onRecognizeEndpointChange}
+                        className={isRecognizeEndpointValid ? "" : "error-input"}
+                        placeholder="https://..."
+                        autoComplete="off"
+                    />
+                    <button
+                        type="button"
+                        className="check-button"
+                        onClick={checkRecognizeEndpoint}
+                        disabled={isChecking || !isRecognizeEndpointValid}
+                    >
+                        {isChecking ? "⏳" : "🔍"}
+                    </button>
+                </div>
+                {!isRecognizeEndpointValid && <div className="error-message">{recognizeEndpointErrorMsg}</div>}
+            </div>
             <div className="button-group">
                 <button onClick={saveOptions}>Сохранить</button>
                 <button onClick={clearOptions} className="clear-button">
-                    Очистить
+                    Сбросить
                 </button>
             </div>
             {status && <p className="status-message">{status}</p>}
