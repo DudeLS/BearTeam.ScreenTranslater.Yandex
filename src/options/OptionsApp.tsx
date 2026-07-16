@@ -19,7 +19,7 @@ const OptionsApp: React.FC = () => {
     const [status, setStatus] = useState("");
     const [translateEndpoint, setTranslateEndpoint] = useState(DEFAULT_TRANSLATE_TEXT_URL);
     const [recognizeEndpoint, setRecognizeEndpoint] = useState(DEFAULT_RECOGNIZE_TEXT_URL);
-    const [isChecking, setIsChecking] = useState(false);
+    const [disabled, setDisabled] = useState(false);
 
     const [isApiKeyValid, setIsApiKeyValid] = useState(true);
     const [isFolderIdValid, setIsFolderIdValid] = useState(true);
@@ -212,7 +212,7 @@ const OptionsApp: React.FC = () => {
             return;
         }
 
-        setIsChecking(true);
+        setDisabled(true);
         setStatus("⏳ Проверка...");
 
         try {
@@ -234,7 +234,7 @@ const OptionsApp: React.FC = () => {
         } catch (error: any) {
             setStatus(`❌ Ошибка: ${error.message || String(error)}`);
         } finally {
-            setIsChecking(false);
+            setDisabled(false);
             setTimeout(() => setStatus(""), 3000);
         }
     };
@@ -247,7 +247,7 @@ const OptionsApp: React.FC = () => {
             return;
         }
 
-        setIsChecking(true);
+        setDisabled(true);
         setStatus("⏳ Проверка...");
 
         try {
@@ -269,7 +269,7 @@ const OptionsApp: React.FC = () => {
         } catch (error: any) {
             setStatus(`❌ Ошибка: ${error.message || String(error)}`);
         } finally {
-            setIsChecking(false);
+            setDisabled(false);
             setTimeout(() => setStatus(""), 3000);
         }
     };
@@ -288,6 +288,7 @@ const OptionsApp: React.FC = () => {
                         className={`${isApiKeyValid ? "" : "error-input"} ${!showApiKey ? "hidden-text" : ""}`}
                         placeholder="Введите API Key"
                         autoComplete="off"
+                        disabled={disabled}
                     />
                     <button
                         type="button"
@@ -295,6 +296,7 @@ const OptionsApp: React.FC = () => {
                         onClick={toggleShowApiKey}
                         title={showApiKey ? "Скрыть" : "Показать"}
                         aria-label={showApiKey ? "Скрыть API Key" : "Показать API Key"}
+                        disabled={disabled}
                     >
                         {showApiKey ? "🙈" : "👁️"}
                     </button>
@@ -312,6 +314,7 @@ const OptionsApp: React.FC = () => {
                         className={`${isFolderIdValid ? "" : "error-input"} ${!showFolderId ? "hidden-text" : ""}`}
                         placeholder="Введите Folder ID"
                         autoComplete="off"
+                        disabled={disabled}
                     />
                     <button
                         type="button"
@@ -319,6 +322,7 @@ const OptionsApp: React.FC = () => {
                         onClick={toggleShowFolderId}
                         title={showFolderId ? "Скрыть" : "Показать"}
                         aria-label={showFolderId ? "Скрыть Folder ID" : "Показать Folder ID"}
+                        disabled={disabled}
                     >
                         {showFolderId ? "🙈" : "👁️"}
                     </button>
@@ -336,14 +340,15 @@ const OptionsApp: React.FC = () => {
                         className={isTranslateEndpointValid ? "" : "error-input"}
                         placeholder="https://..."
                         autoComplete="off"
+                        disabled={disabled}
                     />
                     <button
                         type="button"
                         className="check-button"
                         onClick={checkTranslateEndpoint}
-                        disabled={isChecking || !isTranslateEndpointValid}
+                        disabled={disabled || !isTranslateEndpointValid}
                     >
-                        {isChecking ? "⏳" : "🔍"}
+                        {disabled ? "⏳" : "🔍"}
                     </button>
                 </div>
                 {!isTranslateEndpointValid && <div className="error-message">{translateEndpointErrorMsg}</div>}
@@ -359,14 +364,15 @@ const OptionsApp: React.FC = () => {
                         className={isRecognizeEndpointValid ? "" : "error-input"}
                         placeholder="https://..."
                         autoComplete="off"
+                        disabled={disabled}
                     />
                     <button
                         type="button"
                         className="check-button"
                         onClick={checkRecognizeEndpoint}
-                        disabled={isChecking || !isRecognizeEndpointValid}
+                        disabled={disabled || !isRecognizeEndpointValid}
                     >
-                        {isChecking ? "⏳" : "🔍"}
+                        {disabled ? "⏳" : "🔍"}
                     </button>
                 </div>
                 {!isRecognizeEndpointValid && <div className="error-message">{recognizeEndpointErrorMsg}</div>}

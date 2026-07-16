@@ -127,7 +127,7 @@ button:disabled:hover {
     color: green;
 }
 
-.input-wrapper .check-button {
+.check-button {
     position: absolute;
     right: 8px;
     top: 50%;
@@ -141,10 +141,16 @@ button:disabled:hover {
     color: #666;
     transition: color 0.2s;
 }
-.input-wrapper .check-button:hover {
+
+.check-button:hover {
     color: #333;
 }
-.input-wrapper .check-button:disabled {
+
+.check-button:focus {
+    outline: none;
+}
+
+.check-button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
