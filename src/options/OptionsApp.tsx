@@ -13,6 +13,10 @@ const KEYS = {
 const TEST_IMAGE_BASE64 =
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 
+const ValidationMessage: React.FC<{ valid: boolean; message: string }> = ({ valid, message }) => {
+    return valid ? null : <div className="error-message">{message}</div>;
+};
+
 const OptionsApp: React.FC = () => {
     const [apiKey, setApiKey] = useState("");
     const [folderId, setFolderId] = useState("");
@@ -301,7 +305,7 @@ const OptionsApp: React.FC = () => {
                         {showApiKey ? "🙈" : "👁️"}
                     </button>
                 </div>
-                {!isApiKeyValid && <div className="error-message">{apiKeyErrorMsg}</div>}
+                <ValidationMessage valid={isApiKeyValid} message={apiKeyErrorMsg} />
             </div>
             <div className="form-group">
                 <label htmlFor="folderId">Yandex Folder ID</label>
@@ -327,7 +331,7 @@ const OptionsApp: React.FC = () => {
                         {showFolderId ? "🙈" : "👁️"}
                     </button>
                 </div>
-                {!isFolderIdValid && <div className="error-message">{folderIdErrorMsg}</div>}
+                <ValidationMessage valid={isFolderIdValid} message={folderIdErrorMsg} />
             </div>
             <div className="form-group">
                 <label htmlFor="translateEndpoint">Translate Text URL</label>
@@ -351,7 +355,7 @@ const OptionsApp: React.FC = () => {
                         {disabled ? "⏳" : "🔍"}
                     </button>
                 </div>
-                {!isTranslateEndpointValid && <div className="error-message">{translateEndpointErrorMsg}</div>}
+                <ValidationMessage valid={isTranslateEndpointValid} message={translateEndpointErrorMsg} />
             </div>
             <div className="form-group">
                 <label htmlFor="recognizeEndpoint">Recognize Text URL</label>
@@ -375,7 +379,7 @@ const OptionsApp: React.FC = () => {
                         {disabled ? "⏳" : "🔍"}
                     </button>
                 </div>
-                {!isRecognizeEndpointValid && <div className="error-message">{recognizeEndpointErrorMsg}</div>}
+                <ValidationMessage valid={isRecognizeEndpointValid} message={recognizeEndpointErrorMsg} />
             </div>
             <div className="button-group">
                 <button onClick={saveOptions}>Сохранить</button>
