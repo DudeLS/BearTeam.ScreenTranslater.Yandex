@@ -16,51 +16,92 @@ h1 {
     margin-bottom: 20px;
 }
 
-.form-group {
-    margin-bottom: 16px;
-}
-
 label {
     display: block;
     font-weight: 500;
     margin-bottom: 4px;
 }
 
-/* === Обёртка для инпута и кнопки === */
+.form-group {
+    margin-bottom: 16px;
+}
+
 .input-wrapper {
     position: relative;
     width: 100%;
 }
 
-input[type="text"] {
+.input-text {
     width: 100%;
     padding: 8px;
-    padding-right: 40px; /* место для кнопки */
+    padding-right: 40px;
     border: 1px solid #ccc;
     border-radius: 4px;
     box-sizing: border-box;
 }
 
-/* Ошибка */
-input.error-input {
+.input-text--error {
     border-color: #d32f2f;
     background-color: #ffebee;
 }
 
-.error-message {
+.input-text--hidden {
+    -webkit-text-security: disc;
+}
+
+.validation-message__error {
     color: #d32f2f;
     font-size: 13px;
     margin-top: 4px;
 }
 
-/* === Скрытие текста через точки === */
-.hidden-text {
-    -webkit-text-security: disc;
-    text-security: disc;
+.button {
+    background: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 14px;
 }
 
-/* === Кнопка-глаз === */
-.toggle-visibility {
+.button:hover {
+    background: #45a049;
+}
+
+.button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.button:disabled:hover {
+    background: #ccc;
+}
+
+.button-primary {
+    background-color: #1e6599;
+    border-color: #1e6599;
+    color: #ffffff;
+}
+
+.button-primary:hover {
+    background-color: #4b84ad;
+    border-color: #4b84ad;
+    color: #ffffff;
+}
+
+.button-danger {
+    border-color: #f5222d;
+    color: #f5222d;
+}
+
+.button-danger:hover {
+    background: transparent;
+    border-color: #ff4d4f;
+    color: #ff4d4f;
+}
+
+.button-icon {
     position: absolute;
     right: 8px;
     top: 50%;
@@ -75,27 +116,12 @@ input.error-input {
     transition: color 0.2s;
 }
 
-.toggle-visibility:hover {
-    color: #333;
+.button-icon:hover {
+    background: #1e6599;
 }
 
-.toggle-visibility:focus {
+.button-icon:focus {
     outline: none;
-}
-
-/* === Основные кнопки === */
-button {
-    background: #4caf50;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 8px 16px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-button:hover {
-    background: #45a049;
 }
 
 .button-group {
@@ -103,15 +129,6 @@ button:hover {
     gap: 12px;
     align-items: center;
     margin-top: 8px;
-}
-
-button:disabled {
-    background: #ccc;
-    cursor: not-allowed;
-}
-
-button:disabled:hover {
-    background: #ccc;
 }
 
 .clear-button {
@@ -125,32 +142,4 @@ button:disabled:hover {
 .status-message {
     margin-top: 12px;
     color: green;
-}
-
-.check-button {
-    position: absolute;
-    right: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 4px 6px;
-    font-size: 18px;
-    line-height: 1;
-    color: #666;
-    transition: color 0.2s;
-}
-
-.check-button:hover {
-    color: #333;
-}
-
-.check-button:focus {
-    outline: none;
-}
-
-.check-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
 }

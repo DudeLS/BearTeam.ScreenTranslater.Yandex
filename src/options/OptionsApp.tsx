@@ -14,7 +14,7 @@ const TEST_IMAGE_BASE64 =
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 
 const ValidationMessage: React.FC<{ valid: boolean; message: string }> = ({ valid, message }) => {
-    return valid ? null : <div className="error-message">{message}</div>;
+    return valid ? null : <div className="validation-message__error">{message}</div>;
 };
 
 const OptionsApp: React.FC = () => {
@@ -208,6 +208,10 @@ const OptionsApp: React.FC = () => {
     const toggleShowApiKey = () => setShowApiKey(!showApiKey);
     const toggleShowFolderId = () => setShowFolderId(!showFolderId);
 
+    const delay = (ms: number): Promise<void> => {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+    };
+
     const checkTranslateEndpoint = async () => {
         const isValidApiKey = validateApiKey(apiKey);
         const isValidFolderId = validateFolderId(folderId);
@@ -220,6 +224,8 @@ const OptionsApp: React.FC = () => {
         setStatus("⏳ Проверка...");
 
         try {
+            await delay(3000);
+
             const service = new TranslateService({
                 apiKey: apiKey.trim(),
                 folderId: folderId.trim(),
@@ -278,6 +284,44 @@ const OptionsApp: React.FC = () => {
         }
     };
 
+    const getApiKeyClasses = () => {
+        const classes: string[] = ["input-text"];
+        if (!isApiKeyValid) {
+            classes.push("input-text--error");
+        }
+        if (!showApiKey) {
+            classes.push("input-text--hidden");
+        }
+        return classes.join(" ");
+    };
+
+    const getFolderIdClasses = () => {
+        const classes: string[] = ["input-text"];
+        if (!isFolderIdValid) {
+            classes.push("input-text--error");
+        }
+        if (!showFolderId) {
+            classes.push("input-text--hidden");
+        }
+        return classes.join(" ");
+    };
+
+    const getTranslateEndpointClasses = () => {
+        const classes: string[] = ["input-text"];
+        if (!isTranslateEndpointValid) {
+            classes.push("input-text--error");
+        }
+        return classes.join(" ");
+    };
+
+    const getRecognizeEndpointClasses = () => {
+        const classes: string[] = ["input-text"];
+        if (!isRecognizeEndpointValid) {
+            classes.push("input-text--error");
+        }
+        return classes.join(" ");
+    };
+
     return (
         <div className="container">
             <h1>Настройки расширения</h1>
@@ -289,14 +333,14 @@ const OptionsApp: React.FC = () => {
                         type="text"
                         value={apiKey}
                         onChange={onApiKeyChange}
-                        className={`${isApiKeyValid ? "" : "error-input"} ${!showApiKey ? "hidden-text" : ""}`}
+                        className={getApiKeyClasses()}
                         placeholder="Введите API Key"
                         autoComplete="off"
                         disabled={disabled}
                     />
                     <button
                         type="button"
-                        className="toggle-visibility"
+                        className="button button-icon"
                         onClick={toggleShowApiKey}
                         title={showApiKey ? "Скрыть" : "Показать"}
                         aria-label={showApiKey ? "Скрыть API Key" : "Показать API Key"}
@@ -315,14 +359,14 @@ const OptionsApp: React.FC = () => {
                         type="text"
                         value={folderId}
                         onChange={onFolderIdChange}
-                        className={`${isFolderIdValid ? "" : "error-input"} ${!showFolderId ? "hidden-text" : ""}`}
+                        className={getFolderIdClasses()}
                         placeholder="Введите Folder ID"
                         autoComplete="off"
                         disabled={disabled}
                     />
                     <button
                         type="button"
-                        className="toggle-visibility"
+                        className="button button-icon"
                         onClick={toggleShowFolderId}
                         title={showFolderId ? "Скрыть" : "Показать"}
                         aria-label={showFolderId ? "Скрыть Folder ID" : "Показать Folder ID"}
@@ -341,14 +385,14 @@ const OptionsApp: React.FC = () => {
                         type="text"
                         value={translateEndpoint}
                         onChange={onTranslateEndpointChange}
-                        className={isTranslateEndpointValid ? "" : "error-input"}
+                        className={getTranslateEndpointClasses()}
                         placeholder="https://..."
                         autoComplete="off"
                         disabled={disabled}
                     />
                     <button
                         type="button"
-                        className="check-button"
+                        className="button button-icon"
                         onClick={checkTranslateEndpoint}
                         disabled={disabled || !isTranslateEndpointValid}
                     >
@@ -365,14 +409,14 @@ const OptionsApp: React.FC = () => {
                         type="text"
                         value={recognizeEndpoint}
                         onChange={onRecognizeEndpointChange}
-                        className={isRecognizeEndpointValid ? "" : "error-input"}
+                        className={getRecognizeEndpointClasses()}
                         placeholder="https://..."
                         autoComplete="off"
                         disabled={disabled}
                     />
                     <button
                         type="button"
-                        className="check-button"
+                        className="button button-icon"
                         onClick={checkRecognizeEndpoint}
                         disabled={disabled || !isRecognizeEndpointValid}
                     >
@@ -382,8 +426,10 @@ const OptionsApp: React.FC = () => {
                 <ValidationMessage valid={isRecognizeEndpointValid} message={recognizeEndpointErrorMsg} />
             </div>
             <div className="button-group">
-                <button onClick={saveOptions}>Сохранить</button>
-                <button onClick={clearOptions} className="clear-button">
+                <button onClick={saveOptions} className="button button-primary" disabled={disabled}>
+                    Сохранить
+                </button>
+                <button onClick={clearOptions} className="button button-danger" disabled={disabled}>
                     Сбросить
                 </button>
             </div>
