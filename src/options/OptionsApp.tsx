@@ -2,8 +2,9 @@ import "./options.css";
 import React, { useState, useEffect } from "react";
 import { DEFAULT_TRANSLATE_TEXT_URL, TranslateService } from "../services/translate.service";
 import { DEFAULT_RECOGNIZE_TEXT_URL, RecognizeService } from "../services/recognize.service";
+import { Groupbox } from "../components/Groupbox";
 
-const KEYS = {
+const STORAGE_KEY = {
     YANDEX_API_KEY: "yandexApiKey",
     YANDEX_FOLDER_ID: "yandexFolderId",
     TRANSLATE_ENDPOINT: "translateTextUrl",
@@ -13,14 +14,45 @@ const KEYS = {
 const TEST_IMAGE_BASE64 =
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 
+enum NotifyType {
+    Default,
+    Success,
+    Warning,
+    Exception,
+}
+
 const ValidationMessage: React.FC<{ valid: boolean; message: string }> = ({ valid, message }) => {
     return valid ? null : <div className="validation-message__error">{message}</div>;
+};
+
+type NotifyProps = {
+    visible: boolean;
+    message: string;
+    type: NotifyType;
+};
+
+const NotifyMessage: React.FC<NotifyProps> = ({ visible, message, type }) => {
+    let typeClass = "notify-default";
+    switch (type) {
+        case NotifyType.Success:
+            typeClass = "notify-success";
+            break;
+        case NotifyType.Warning:
+            typeClass = "notify-warning";
+            break;
+        case NotifyType.Exception:
+            typeClass = "notify-exception";
+            break;
+        default:
+            typeClass = "notify-default";
+            break;
+    }
+    return visible ? <div className={`notify-message ${typeClass}`}>{message}</div> : null;
 };
 
 const OptionsApp: React.FC = () => {
     const [apiKey, setApiKey] = useState("");
     const [folderId, setFolderId] = useState("");
-    const [status, setStatus] = useState("");
     const [translateEndpoint, setTranslateEndpoint] = useState(DEFAULT_TRANSLATE_TEXT_URL);
     const [recognizeEndpoint, setRecognizeEndpoint] = useState(DEFAULT_RECOGNIZE_TEXT_URL);
     const [disabled, setDisabled] = useState(false);
@@ -36,10 +68,21 @@ const OptionsApp: React.FC = () => {
 
     const [showApiKey, setShowApiKey] = useState(false);
     const [showFolderId, setShowFolderId] = useState(false);
+    const [isTranslateEndpointChecking, setIsTranslateEndpointChecking] = useState(false);
+    const [isRecognizeEndpointChecking, setIsRecognizeEndpointChecking] = useState(false);
+
+    const [notifyType, setNotifyType] = useState(NotifyType.Default);
+    const [notifyMessage, setNotifyMessage] = useState("");
+    const [notifyVisible, setNotifyVisible] = useState(false);
 
     useEffect(() => {
         chrome.storage.local.get(
-            [KEYS.YANDEX_API_KEY, KEYS.YANDEX_FOLDER_ID, KEYS.TRANSLATE_ENDPOINT, KEYS.RECOGNIZE_ENDPOINT],
+            [
+                STORAGE_KEY.YANDEX_API_KEY,
+                STORAGE_KEY.YANDEX_FOLDER_ID,
+                STORAGE_KEY.TRANSLATE_ENDPOINT,
+                STORAGE_KEY.RECOGNIZE_ENDPOINT,
+            ],
             (data: any) => {
                 const apiKey = data.yandexApiKey || "";
                 const folderId = data.yandexFolderId || "";
@@ -177,8 +220,8 @@ const OptionsApp: React.FC = () => {
                     recognizeTextUrl: recognizeEndpoint.trim(),
                 },
                 () => {
-                    setStatus("Настройки сохранены");
-                    setTimeout(() => setStatus(""), 3000);
+                    setupNotify("Настройки сохранены", NotifyType.Success);
+                    setTimeout(() => clearNotify(), 3000);
                 },
             );
         }
@@ -186,7 +229,7 @@ const OptionsApp: React.FC = () => {
 
     const clearOptions = () => {
         if (window.confirm("Вы уверены, что хотите очистить все настройки?")) {
-            chrome.storage.local.remove([KEYS.YANDEX_API_KEY, KEYS.YANDEX_FOLDER_ID], () => {
+            chrome.storage.local.remove([STORAGE_KEY.YANDEX_API_KEY, STORAGE_KEY.YANDEX_FOLDER_ID], () => {
                 setApiKey("");
                 setIsApiKeyValid(true);
                 setApiKeyErrorMsg("");
@@ -199,10 +242,22 @@ const OptionsApp: React.FC = () => {
                 setRecognizeEndpoint(DEFAULT_RECOGNIZE_TEXT_URL);
                 setIsRecognizeEndpointValid(true);
                 setRecognizeEndpointErrorMsg("");
-                setStatus("Настройки очищены");
-                setTimeout(() => setStatus(""), 3000);
+                setupNotify("Настройки очищены", NotifyType.Success);
+                setTimeout(() => clearNotify(), 3000);
             });
         }
+    };
+
+    const setupNotify = (message: string, type: NotifyType = NotifyType.Default) => {
+        setNotifyVisible(true);
+        setNotifyMessage(message);
+        setNotifyType(type);
+    };
+
+    const clearNotify = () => {
+        setNotifyVisible(false);
+        setNotifyMessage("");
+        setNotifyType(NotifyType.Default);
     };
 
     const toggleShowApiKey = () => setShowApiKey(!showApiKey);
@@ -221,7 +276,8 @@ const OptionsApp: React.FC = () => {
         }
 
         setDisabled(true);
-        setStatus("⏳ Проверка...");
+        setupNotify("⏳ Проверка...");
+        setIsTranslateEndpointChecking(true);
 
         try {
             await delay(3000);
@@ -237,15 +293,16 @@ const OptionsApp: React.FC = () => {
                 targetLang: "ru",
             });
             if (result.success) {
-                setStatus(`✅ Translate доступен (перевод: "${result.translations?.[0] || ""}")`);
+                setupNotify(`✅ Translate доступен (перевод: "${result.translations?.[0] || ""}")`, NotifyType.Success);
             } else {
-                setStatus(`❌ Ошибка: ${result.message || "неизвестная ошибка"}`);
+                setupNotify(`❌ Ошибка: ${result.message || "неизвестная ошибка"}`, NotifyType.Exception);
             }
         } catch (error: any) {
-            setStatus(`❌ Ошибка: ${error.message || String(error)}`);
+            setupNotify(`❌ Ошибка: ${error.message || String(error)}`, NotifyType.Exception);
         } finally {
             setDisabled(false);
-            setTimeout(() => setStatus(""), 3000);
+            setIsTranslateEndpointChecking(false);
+            setTimeout(() => clearNotify(), 3000);
         }
     };
 
@@ -258,7 +315,8 @@ const OptionsApp: React.FC = () => {
         }
 
         setDisabled(true);
-        setStatus("⏳ Проверка...");
+        setupNotify("⏳ Проверка...");
+        setIsRecognizeEndpointChecking(true);
 
         try {
             const service = new RecognizeService({
@@ -272,15 +330,16 @@ const OptionsApp: React.FC = () => {
                 langs: ["ru", "en"],
             });
             if (result.success) {
-                setStatus(`✅ Recognize доступен (распознано: "${result.recognition || ""}")`);
+                setupNotify(`✅ Recognize доступен (распознано: "${result.recognition || ""}")`, NotifyType.Success);
             } else {
-                setStatus(`❌ Ошибка: ${result.message || "неизвестная ошибка"}`);
+                setupNotify(`❌ Ошибка: ${result.message || "неизвестная ошибка"}`, NotifyType.Exception);
             }
         } catch (error: any) {
-            setStatus(`❌ Ошибка: ${error.message || String(error)}`);
+            setupNotify(`❌ Ошибка: ${error.message || String(error)}`, NotifyType.Exception);
         } finally {
             setDisabled(false);
-            setTimeout(() => setStatus(""), 3000);
+            setIsRecognizeEndpointChecking(false);
+            setTimeout(() => clearNotify(), 3000);
         }
     };
 
@@ -306,7 +365,7 @@ const OptionsApp: React.FC = () => {
         return classes.join(" ");
     };
 
-    const getTranslateEndpointClasses = () => {
+    const getTranslateEndpointInputClasses = () => {
         const classes: string[] = ["input-text"];
         if (!isTranslateEndpointValid) {
             classes.push("input-text--error");
@@ -314,7 +373,17 @@ const OptionsApp: React.FC = () => {
         return classes.join(" ");
     };
 
-    const getRecognizeEndpointClasses = () => {
+    const getTranslateEndpointButtonClasses = () => {
+        const classes: string[] = ["button", "button-icon"];
+        if (isTranslateEndpointChecking) {
+            classes.push("icon-spinner");
+        } else {
+            classes.push("icon-search");
+        }
+        return classes.join(" ");
+    };
+
+    const getRecognizeEndpointInputClasses = () => {
         const classes: string[] = ["input-text"];
         if (!isRecognizeEndpointValid) {
             classes.push("input-text--error");
@@ -322,118 +391,137 @@ const OptionsApp: React.FC = () => {
         return classes.join(" ");
     };
 
+    const getRecognizeEndpointButtonClasses = () => {
+        const classes: string[] = ["button", "button-icon"];
+        if (isRecognizeEndpointChecking) {
+            classes.push("icon-spinner");
+        } else {
+            classes.push("icon-search");
+        }
+        return classes.join(" ");
+    };
+
     return (
-        <div className="container">
-            <h1>Настройки расширения</h1>
-            <div className="form-group">
-                <label htmlFor="apiKey">Yandex API Key</label>
-                <div className="input-wrapper">
-                    <input
-                        id="apiKey"
-                        type="text"
-                        value={apiKey}
-                        onChange={onApiKeyChange}
-                        className={getApiKeyClasses()}
-                        placeholder="Введите API Key"
-                        autoComplete="off"
-                        disabled={disabled}
-                    />
-                    <button
-                        type="button"
-                        className="button button-icon"
-                        onClick={toggleShowApiKey}
-                        title={showApiKey ? "Скрыть" : "Показать"}
-                        aria-label={showApiKey ? "Скрыть API Key" : "Показать API Key"}
-                        disabled={disabled}
-                    >
-                        {showApiKey ? "🙈" : "👁️"}
+        <div className="options-page">
+            <Groupbox title="Настройки расширения">
+                <NotifyMessage visible={notifyVisible} message={notifyMessage} type={notifyType} />
+                <div className="form-group">
+                    <label htmlFor="apiKey" className="input-label">
+                        Yandex API Key
+                    </label>
+                    <div className="input-wrapper">
+                        <input
+                            id="apiKey"
+                            type="text"
+                            value={apiKey}
+                            onChange={onApiKeyChange}
+                            className={getApiKeyClasses()}
+                            placeholder="Введите API Key"
+                            autoComplete="off"
+                            disabled={disabled}
+                            required={true}
+                        />
+                        <button
+                            type="button"
+                            onClick={toggleShowApiKey}
+                            className={`button button-icon ${showApiKey ? "icon-eye_closed" : "icon-eye_opened"}`}
+                            title={showApiKey ? "Скрыть" : "Показать"}
+                            aria-label={showApiKey ? "Скрыть" : "Показать"}
+                            disabled={disabled}
+                        ></button>
+                    </div>
+                    <ValidationMessage valid={isApiKeyValid} message={apiKeyErrorMsg} />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="folderId" className="input-label">
+                        Yandex Folder ID
+                    </label>
+                    <div className="input-wrapper">
+                        <input
+                            id="folderId"
+                            type="text"
+                            value={folderId}
+                            onChange={onFolderIdChange}
+                            className={getFolderIdClasses()}
+                            placeholder="Введите Folder ID"
+                            autoComplete="off"
+                            disabled={disabled}
+                            required={true}
+                        />
+                        <button
+                            type="button"
+                            onClick={toggleShowFolderId}
+                            className={`button button-icon ${showFolderId ? "icon-eye_closed" : "icon-eye_opened"}`}
+                            title={showFolderId ? "Скрыть" : "Показать"}
+                            aria-label={showFolderId ? "Скрыть" : "Показать"}
+                            disabled={disabled}
+                        ></button>
+                    </div>
+                    <ValidationMessage valid={isFolderIdValid} message={folderIdErrorMsg} />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="translateEndpoint" className="input-label">
+                        Translate Text URL
+                    </label>
+                    <div className="input-wrapper">
+                        <input
+                            id="translateEndpoint"
+                            type="text"
+                            value={translateEndpoint}
+                            onChange={onTranslateEndpointChange}
+                            className={getTranslateEndpointInputClasses()}
+                            placeholder="https://..."
+                            autoComplete="off"
+                            disabled={disabled}
+                            required={true}
+                        />
+                        <button
+                            type="button"
+                            className={getTranslateEndpointButtonClasses()}
+                            onClick={checkTranslateEndpoint}
+                            disabled={disabled || !isTranslateEndpointValid}
+                            title="Проверить"
+                            aria-label="Проверить"
+                        ></button>
+                    </div>
+                    <ValidationMessage valid={isTranslateEndpointValid} message={translateEndpointErrorMsg} />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="recognizeEndpoint" className="input-label">
+                        Recognize Text URL
+                    </label>
+                    <div className="input-wrapper">
+                        <input
+                            id="recognizeEndpoint"
+                            type="text"
+                            value={recognizeEndpoint}
+                            onChange={onRecognizeEndpointChange}
+                            className={getRecognizeEndpointInputClasses()}
+                            placeholder="https://..."
+                            autoComplete="off"
+                            disabled={disabled}
+                            required={true}
+                        />
+                        <button
+                            type="button"
+                            className={getRecognizeEndpointButtonClasses()}
+                            onClick={checkRecognizeEndpoint}
+                            disabled={disabled || !isRecognizeEndpointValid}
+                            title="Проверить"
+                            aria-label="Проверить"
+                        ></button>
+                    </div>
+                    <ValidationMessage valid={isRecognizeEndpointValid} message={recognizeEndpointErrorMsg} />
+                </div>
+                <div className="button-group">
+                    <button onClick={saveOptions} className="button button-primary" disabled={disabled}>
+                        Сохранить
+                    </button>
+                    <button onClick={clearOptions} className="button button-danger" disabled={disabled}>
+                        Сбросить
                     </button>
                 </div>
-                <ValidationMessage valid={isApiKeyValid} message={apiKeyErrorMsg} />
-            </div>
-            <div className="form-group">
-                <label htmlFor="folderId">Yandex Folder ID</label>
-                <div className="input-wrapper">
-                    <input
-                        id="folderId"
-                        type="text"
-                        value={folderId}
-                        onChange={onFolderIdChange}
-                        className={getFolderIdClasses()}
-                        placeholder="Введите Folder ID"
-                        autoComplete="off"
-                        disabled={disabled}
-                    />
-                    <button
-                        type="button"
-                        className="button button-icon"
-                        onClick={toggleShowFolderId}
-                        title={showFolderId ? "Скрыть" : "Показать"}
-                        aria-label={showFolderId ? "Скрыть Folder ID" : "Показать Folder ID"}
-                        disabled={disabled}
-                    >
-                        {showFolderId ? "🙈" : "👁️"}
-                    </button>
-                </div>
-                <ValidationMessage valid={isFolderIdValid} message={folderIdErrorMsg} />
-            </div>
-            <div className="form-group">
-                <label htmlFor="translateEndpoint">Translate Text URL</label>
-                <div className="input-wrapper">
-                    <input
-                        id="translateEndpoint"
-                        type="text"
-                        value={translateEndpoint}
-                        onChange={onTranslateEndpointChange}
-                        className={getTranslateEndpointClasses()}
-                        placeholder="https://..."
-                        autoComplete="off"
-                        disabled={disabled}
-                    />
-                    <button
-                        type="button"
-                        className="button button-icon"
-                        onClick={checkTranslateEndpoint}
-                        disabled={disabled || !isTranslateEndpointValid}
-                    >
-                        {disabled ? "⏳" : "🔍"}
-                    </button>
-                </div>
-                <ValidationMessage valid={isTranslateEndpointValid} message={translateEndpointErrorMsg} />
-            </div>
-            <div className="form-group">
-                <label htmlFor="recognizeEndpoint">Recognize Text URL</label>
-                <div className="input-wrapper">
-                    <input
-                        id="recognizeEndpoint"
-                        type="text"
-                        value={recognizeEndpoint}
-                        onChange={onRecognizeEndpointChange}
-                        className={getRecognizeEndpointClasses()}
-                        placeholder="https://..."
-                        autoComplete="off"
-                        disabled={disabled}
-                    />
-                    <button
-                        type="button"
-                        className="button button-icon"
-                        onClick={checkRecognizeEndpoint}
-                        disabled={disabled || !isRecognizeEndpointValid}
-                    >
-                        {disabled ? "⏳" : "🔍"}
-                    </button>
-                </div>
-                <ValidationMessage valid={isRecognizeEndpointValid} message={recognizeEndpointErrorMsg} />
-            </div>
-            <div className="button-group">
-                <button onClick={saveOptions} className="button button-primary" disabled={disabled}>
-                    Сохранить
-                </button>
-                <button onClick={clearOptions} className="button button-danger" disabled={disabled}>
-                    Сбросить
-                </button>
-            </div>
-            {status && <p className="status-message">{status}</p>}
+            </Groupbox>
         </div>
     );
 };
