@@ -2,7 +2,10 @@ import "./options.css";
 import React, { useState, useEffect } from "react";
 import { DEFAULT_TRANSLATE_TEXT_URL, TranslateService } from "../services/translate.service";
 import { DEFAULT_RECOGNIZE_TEXT_URL, RecognizeService } from "../services/recognize.service";
-import { Groupbox } from "../components/Groupbox";
+import { NotifyToast, NotifyType } from "../components/NotifyToast";
+import { GroupBox } from "../components/GroupBox";
+import { Page } from "../components/Page";
+import { ValidationMessage } from "../components/ValidationMessage";
 
 const STORAGE_KEY = {
     YANDEX_API_KEY: "yandexApiKey",
@@ -14,41 +17,7 @@ const STORAGE_KEY = {
 const TEST_IMAGE_BASE64 =
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 
-enum NotifyType {
-    Default,
-    Success,
-    Warning,
-    Exception,
-}
-
-const ValidationMessage: React.FC<{ valid: boolean; message: string }> = ({ valid, message }) => {
-    return valid ? null : <div className="validation-message__error">{message}</div>;
-};
-
-type NotifyProps = {
-    visible: boolean;
-    message: string;
-    type: NotifyType;
-};
-
-const NotifyMessage: React.FC<NotifyProps> = ({ visible, message, type }) => {
-    let typeClass = "notify-default";
-    switch (type) {
-        case NotifyType.Success:
-            typeClass = "notify-success";
-            break;
-        case NotifyType.Warning:
-            typeClass = "notify-warning";
-            break;
-        case NotifyType.Exception:
-            typeClass = "notify-exception";
-            break;
-        default:
-            typeClass = "notify-default";
-            break;
-    }
-    return visible ? <div className={`notify-message ${typeClass}`}>{message}</div> : null;
-};
+let timerId: any;
 
 const OptionsApp: React.FC = () => {
     const [apiKey, setApiKey] = useState("");
@@ -249,15 +218,19 @@ const OptionsApp: React.FC = () => {
     };
 
     const setupNotify = (message: string, type: NotifyType = NotifyType.Default) => {
+        clearTimeout(timerId);
         setNotifyVisible(true);
         setNotifyMessage(message);
         setNotifyType(type);
     };
 
     const clearNotify = () => {
-        setNotifyVisible(false);
-        setNotifyMessage("");
-        setNotifyType(NotifyType.Default);
+        timerId = setTimeout(() => {
+            setNotifyVisible(false);
+            setNotifyMessage("");
+            setNotifyType(NotifyType.Default);
+            clearTimeout(timerId);
+        }, 3000);
     };
 
     const toggleShowApiKey = () => setShowApiKey(!showApiKey);
@@ -276,7 +249,7 @@ const OptionsApp: React.FC = () => {
         }
 
         setDisabled(true);
-        setupNotify("⏳ Проверка...");
+        setupNotify("Пожалуйста, подождите...");
         setIsTranslateEndpointChecking(true);
 
         try {
@@ -293,16 +266,18 @@ const OptionsApp: React.FC = () => {
                 targetLang: "ru",
             });
             if (result.success) {
-                setupNotify(`✅ Translate доступен (перевод: "${result.translations?.[0] || ""}")`, NotifyType.Success);
+                setupNotify("Сервис перевода доступен", NotifyType.Success);
             } else {
-                setupNotify(`❌ Ошибка: ${result.message || "неизвестная ошибка"}`, NotifyType.Exception);
+                const message = result.message || "неизвестная ошибка";
+                setupNotify(`Сервис недоступен: ${message}`, NotifyType.Exception);
             }
         } catch (error: any) {
-            setupNotify(`❌ Ошибка: ${error.message || String(error)}`, NotifyType.Exception);
+            const message = error.message || String(error);
+            setupNotify(`Сервис недоступен: ${message}`, NotifyType.Exception);
         } finally {
+            clearNotify();
             setDisabled(false);
             setIsTranslateEndpointChecking(false);
-            setTimeout(() => clearNotify(), 3000);
         }
     };
 
@@ -315,10 +290,12 @@ const OptionsApp: React.FC = () => {
         }
 
         setDisabled(true);
-        setupNotify("⏳ Проверка...");
+        setupNotify("Пожалуйста, подождите...");
         setIsRecognizeEndpointChecking(true);
 
         try {
+            await delay(2000);
+
             const service = new RecognizeService({
                 apiKey: apiKey.trim(),
                 folderId: folderId.trim(),
@@ -330,20 +307,22 @@ const OptionsApp: React.FC = () => {
                 langs: ["ru", "en"],
             });
             if (result.success) {
-                setupNotify(`✅ Recognize доступен (распознано: "${result.recognition || ""}")`, NotifyType.Success);
+                setupNotify("Сервис распознования доступен", NotifyType.Success);
             } else {
-                setupNotify(`❌ Ошибка: ${result.message || "неизвестная ошибка"}`, NotifyType.Exception);
+                const message = result.message || "неизвестная ошибка";
+                setupNotify(`Сервис недоступен: ${message}`, NotifyType.Exception);
             }
         } catch (error: any) {
-            setupNotify(`❌ Ошибка: ${error.message || String(error)}`, NotifyType.Exception);
+            const message = error.message || String(error);
+            setupNotify(`Сервис недоступен: ${message}`, NotifyType.Exception);
         } finally {
+            clearNotify();
             setDisabled(false);
             setIsRecognizeEndpointChecking(false);
-            setTimeout(() => clearNotify(), 3000);
         }
     };
 
-    const getApiKeyClasses = () => {
+    const getApiKeyInputClasses = () => {
         const classes: string[] = ["input-text"];
         if (!isApiKeyValid) {
             classes.push("input-text--error");
@@ -354,13 +333,33 @@ const OptionsApp: React.FC = () => {
         return classes.join(" ");
     };
 
-    const getFolderIdClasses = () => {
+    const getApiKeyButtonClasses = () => {
+        const classes: string[] = ["button", "button-icon"];
+        if (showApiKey) {
+            classes.push("icon-eye_closed");
+        } else {
+            classes.push("icon-eye_opened");
+        }
+        return classes.join(" ");
+    };
+
+    const getFolderIdInputClasses = () => {
         const classes: string[] = ["input-text"];
         if (!isFolderIdValid) {
             classes.push("input-text--error");
         }
         if (!showFolderId) {
             classes.push("input-text--hidden");
+        }
+        return classes.join(" ");
+    };
+
+    const getFolderIdButtonClasses = () => {
+        const classes: string[] = ["button", "button-icon"];
+        if (showFolderId) {
+            classes.push("icon-eye_closed");
+        } else {
+            classes.push("icon-eye_opened");
         }
         return classes.join(" ");
     };
@@ -402,9 +401,9 @@ const OptionsApp: React.FC = () => {
     };
 
     return (
-        <div className="options-page">
-            <Groupbox title="Настройки расширения">
-                <NotifyMessage visible={notifyVisible} message={notifyMessage} type={notifyType} />
+        <Page className="options-page">
+            <NotifyToast visible={notifyVisible} message={notifyMessage} type={notifyType} />
+            <GroupBox title="Настройки расширения">
                 <div className="form-group">
                     <label htmlFor="apiKey" className="input-label">
                         Yandex API Key
@@ -415,7 +414,7 @@ const OptionsApp: React.FC = () => {
                             type="text"
                             value={apiKey}
                             onChange={onApiKeyChange}
-                            className={getApiKeyClasses()}
+                            className={getApiKeyInputClasses()}
                             placeholder="Введите API Key"
                             autoComplete="off"
                             disabled={disabled}
@@ -424,13 +423,13 @@ const OptionsApp: React.FC = () => {
                         <button
                             type="button"
                             onClick={toggleShowApiKey}
-                            className={`button button-icon ${showApiKey ? "icon-eye_closed" : "icon-eye_opened"}`}
+                            className={getApiKeyButtonClasses()}
                             title={showApiKey ? "Скрыть" : "Показать"}
                             aria-label={showApiKey ? "Скрыть" : "Показать"}
                             disabled={disabled}
                         ></button>
                     </div>
-                    <ValidationMessage valid={isApiKeyValid} message={apiKeyErrorMsg} />
+                    <ValidationMessage visible={!isApiKeyValid} message={apiKeyErrorMsg} />
                 </div>
                 <div className="form-group">
                     <label htmlFor="folderId" className="input-label">
@@ -442,7 +441,7 @@ const OptionsApp: React.FC = () => {
                             type="text"
                             value={folderId}
                             onChange={onFolderIdChange}
-                            className={getFolderIdClasses()}
+                            className={getFolderIdInputClasses()}
                             placeholder="Введите Folder ID"
                             autoComplete="off"
                             disabled={disabled}
@@ -451,13 +450,13 @@ const OptionsApp: React.FC = () => {
                         <button
                             type="button"
                             onClick={toggleShowFolderId}
-                            className={`button button-icon ${showFolderId ? "icon-eye_closed" : "icon-eye_opened"}`}
+                            className={getFolderIdButtonClasses()}
                             title={showFolderId ? "Скрыть" : "Показать"}
                             aria-label={showFolderId ? "Скрыть" : "Показать"}
                             disabled={disabled}
                         ></button>
                     </div>
-                    <ValidationMessage valid={isFolderIdValid} message={folderIdErrorMsg} />
+                    <ValidationMessage visible={!isFolderIdValid} message={folderIdErrorMsg} />
                 </div>
                 <div className="form-group">
                     <label htmlFor="translateEndpoint" className="input-label">
@@ -477,14 +476,14 @@ const OptionsApp: React.FC = () => {
                         />
                         <button
                             type="button"
-                            className={getTranslateEndpointButtonClasses()}
                             onClick={checkTranslateEndpoint}
+                            className={getTranslateEndpointButtonClasses()}
                             disabled={disabled || !isTranslateEndpointValid}
                             title="Проверить"
                             aria-label="Проверить"
                         ></button>
                     </div>
-                    <ValidationMessage valid={isTranslateEndpointValid} message={translateEndpointErrorMsg} />
+                    <ValidationMessage visible={!isTranslateEndpointValid} message={translateEndpointErrorMsg} />
                 </div>
                 <div className="form-group">
                     <label htmlFor="recognizeEndpoint" className="input-label">
@@ -504,14 +503,14 @@ const OptionsApp: React.FC = () => {
                         />
                         <button
                             type="button"
-                            className={getRecognizeEndpointButtonClasses()}
                             onClick={checkRecognizeEndpoint}
+                            className={getRecognizeEndpointButtonClasses()}
                             disabled={disabled || !isRecognizeEndpointValid}
                             title="Проверить"
                             aria-label="Проверить"
                         ></button>
                     </div>
-                    <ValidationMessage valid={isRecognizeEndpointValid} message={recognizeEndpointErrorMsg} />
+                    <ValidationMessage visible={!isRecognizeEndpointValid} message={recognizeEndpointErrorMsg} />
                 </div>
                 <div className="button-group">
                     <button onClick={saveOptions} className="button button-primary" disabled={disabled}>
@@ -521,8 +520,8 @@ const OptionsApp: React.FC = () => {
                         Сбросить
                     </button>
                 </div>
-            </Groupbox>
-        </div>
+            </GroupBox>
+        </Page>
     );
 };
 

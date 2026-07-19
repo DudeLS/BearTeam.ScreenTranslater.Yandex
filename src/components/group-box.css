@@ -1,4 +1,4 @@
-.groupbox {
+.group-box {
     background: #ffffff;
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -6,13 +6,13 @@
     margin-top: 8px;
 }
 
-.groupbox-header {
+.group-box__header {
     display: flex;
     align-items: center;
     margin-bottom: 20px;
 }
 
-.groupbox-title {
+.group-box__title {
     font-size: 24px;
     margin: 0;
     font-weight: 600;
@@ -21,7 +21,7 @@
     gap: 10px;
 }
 
-.groupbox-title::before {
+.group-box__title::before {
     content: "";
     display: inline-block;
     width: 28px;
@@ -33,5 +33,5 @@
     background-position: center;
 }
 
-.groupbox-content {
+.group-box__content {
 }

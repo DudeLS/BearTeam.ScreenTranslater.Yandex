@@ -1,0 +1,12 @@
+.validation-message {
+    font-size: 13px;
+    margin-top: 4px;
+}
+
+.validation-message.validation-warning {
+    color: #d3ba2f;
+}
+
+.validation-message.validation-exception {
+    color: #d32f2f;
+}

@@ -1,4 +1,4 @@
-import "./groupbox.css";
+import "./group-box.css";
 import React from "react";
 
 interface GroupboxProps {
@@ -15,13 +15,13 @@ interface GroupboxProps {
 /**
  * Группа (панель) с заголовком и содержимым
  */
-export const Groupbox: React.FC<GroupboxProps> = ({ title, iconClass = "", className = "", children }) => {
+export const GroupBox: React.FC<GroupboxProps> = ({ title, iconClass = "", className = "", children }) => {
     return (
-        <div className={`groupbox ${className}`}>
-            <div className="groupbox-header">
-                <h2 className={`groupbox-title ${iconClass}`}>{title}</h2>
+        <div className={`group-box ${className}`}>
+            <div className="group-box__header">
+                <h2 className={`group-box__title ${iconClass}`}>{title}</h2>
             </div>
-            <div className="groupbox-content">{children}</div>
+            <div className="group-box__content">{children}</div>
         </div>
     );
 };
